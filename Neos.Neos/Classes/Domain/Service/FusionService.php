@@ -57,11 +57,25 @@ class FusionService
     protected $siteRootFusionPattern = 'resource://%s/Private/Fusion/Root.fusion';
 
     /**
+     * Pattern used for determining the Fusion root file for a site
+     *
+     * @var string
+     */
+    protected $siteNodeTypesFolderPattern = 'resource://%s/../NodeTypes';
+
+    /**
      * Pattern used for determining the Fusion root file for autoIncludes
      *
      * @var string
      */
     protected $autoIncludeFusionPattern = 'resource://%s/Private/Fusion/Root.fusion';
+
+    /**
+     * Pattern used for determining the Fusion root file for autoIncludes
+     *
+     * @var string
+     */
+    protected $autoIncludeNodeTypesFolderPattern = 'resource://%s/../NodeTypes';
 
     /**
      * Array of Fusion files to include before the site Fusion
@@ -139,12 +153,16 @@ class FusionService
 
         $siteRootFusionPathAndFilename = sprintf($this->siteRootFusionPattern, $siteResourcesPackageKey);
         $siteRootFusionCode = $this->readExternalFusionFile($siteRootFusionPathAndFilename);
+        $siteNodeTypesFolder = sprintf($this->siteNodeTypesFolderPattern, $siteResourcesPackageKey);
 
         $mergedFusionCode = '';
         $mergedFusionCode .= $this->generateNodeTypeDefinitions();
         $mergedFusionCode .= $this->getFusionIncludes($this->prepareAutoIncludeFusion());
         $mergedFusionCode .= $this->getFusionIncludes($this->prependFusionIncludes);
         $mergedFusionCode .= $siteRootFusionCode;
+        if (is_dir($siteNodeTypesFolder)) {
+            $mergedFusionCode .= $this->getFusionIncludes([$siteNodeTypesFolder . '/**/*.fusion']);
+        }
         $mergedFusionCode .= $this->getFusionIncludes($this->appendFusionIncludes);
 
         return $this->fusionParser->parse($mergedFusionCode, $siteRootFusionPathAndFilename);
@@ -236,7 +254,7 @@ class FusionService
      *
      * @return array
      */
-    protected function prepareAutoIncludeFusion()
+    protected function prepareAutoIncludeFusion(): array
     {
         $autoIncludeFusion = [];
         foreach (array_keys($this->packageManager->getAvailablePackages()) as $packageKey) {
@@ -245,9 +263,12 @@ class FusionService
                 if (is_file($autoIncludeFusionFile)) {
                     $autoIncludeFusion[] = $autoIncludeFusionFile;
                 }
+                $autoIncludeNodeTypesFolder = sprintf($this->autoIncludeNodeTypesFolderPattern, $packageKey);
+                if (is_dir($autoIncludeNodeTypesFolder)) {
+                    $autoIncludeFusion[] = $autoIncludeNodeTypesFolder . '/**/*.fusion';
+                }
             }
         }
-
         return $autoIncludeFusion;
     }
 
