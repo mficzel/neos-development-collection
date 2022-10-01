@@ -55,8 +55,11 @@ class ParserCache
         if ($contextPathAndFilename === null) {
             return $generateValueToCache();
         }
-        if (str_contains($contextPathAndFilename, '://')) {
+        if (str_contains($contextPathAndFilename, 'resource://')) {
             $contextPathAndFilename = $this->getAbsolutePathForPackageRessourceUri($contextPathAndFilename);
+        }
+        if (str_contains($contextPathAndFilename, 'package://')) {
+            $contextPathAndFilename = $this->getAbsolutePathForPackageUri($contextPathAndFilename);
         }
         $identifier = $this->getCacheIdentifierForFile($contextPathAndFilename);
         return $this->cacheForIdentifier($identifier, $generateValueToCache);
@@ -104,5 +107,30 @@ class ParserCache
 
         $package = $this->packageManager->getPackage($resourceUriParts['host']);
         return Files::concatenatePaths([$package->getResourcesPath(), $resourceUriParts['path']]);
+    }
+
+    /**
+     * Uses the same technique to resolve a package resource URI like Flow.
+     *
+     * package://My.Site/NodeTypes/Foo/Bar.fusion
+     * ->
+     * FLOW_PATH_ROOT/Packages/Sites/My.Package/NodeTypes/Foo/Bar.fusion
+     *
+     * {@see \Neos\Flow\ResourceManagement\Streams\ResourceStreamWrapper::evaluateResourcePath()}
+     * {@link https://github.com/neos/flow-development-collection/issues/2687}
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function getAbsolutePathForPackageUri(string $requestedPath): string
+    {
+        $packageUriParts = UnicodeFunctions::parse_url($requestedPath);
+
+        if ((isset($packageUriParts['scheme']) === false
+            || $packageUriParts['scheme'] !== 'package')) {
+            throw new \InvalidArgumentException("Unsupported stream wrapper: '$requestedPath'");
+        }
+
+        $package = $this->packageManager->getPackage($packageUriParts['host']);
+        return Files::concatenatePaths([$package->getPackagePath(), $packageUriParts['path']]);
     }
 }

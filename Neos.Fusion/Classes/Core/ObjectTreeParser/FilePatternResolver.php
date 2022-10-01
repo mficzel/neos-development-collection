@@ -131,7 +131,7 @@ class FilePatternResolver
     {
         $files = [];
         foreach ($fileIterator as $fileInfo) {
-            if ($fileInfo->isDir()) {
+            if ($fileInfo->getFilename() === '..' || $fileInfo->isDir()) {
                 continue;
             }
             $pathAndFilename = $fileInfo->getPathname();
