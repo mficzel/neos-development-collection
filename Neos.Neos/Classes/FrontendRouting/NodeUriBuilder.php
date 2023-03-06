@@ -80,11 +80,19 @@ final class NodeUriBuilder
      */
     public function previewUriFor(NodeAddress $nodeAddress): UriInterface
     {
-        return new Uri($this->uriBuilder->uriFor(
+        $uri = new Uri($this->uriBuilder->uriFor(
             'preview',
-            ['node' => $nodeAddress->serializeForUri()],
+            [],
             'Frontend\Node',
             'Neos.Neos'
         ));
+
+        $queryParameters = ['node' => $nodeAddress->serializeForUri()];
+
+        if ($this->uriBuilder->getRequest()->hasArgument('editPreviewMode')) {
+            $queryParameters['editPreviewMode'] = $this->uriBuilder->getRequest()->getArgument('editPreviewMode');
+        }
+
+        return $uri->withQuery(http_build_query($queryParameters));
     }
 }
