@@ -1,3 +1,12 @@
 include: RawContent/*.fusion
 
-rawContent = Neos.Neos:RawContent.Document
+rawContent = Neos.Neos:RawContent.Document {
+  @cache {
+    mode = 'uncached'
+    context {
+      1 = 'node'
+      2 = 'documentNode'
+      3 = 'site'
+    }
+  }
+}
