@@ -81,4 +81,18 @@ interface ImageInterface extends ResourceBasedInterface
      * @return boolean
      */
     public function isOrientationPortrait();
+
+    /**
+     * Horizontal position of the focal point
+     *
+     * @return integer
+     */
+    public function getFocalPointX(): ?int;
+
+    /**
+     * Vertical position of the focal point
+     *
+     * @return integer
+     */
+    public function getFocalPointY(): ?int;
 }

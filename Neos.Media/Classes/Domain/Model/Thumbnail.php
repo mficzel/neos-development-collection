@@ -32,6 +32,7 @@ use Neos\Media\Domain\Strategy\ThumbnailGeneratorStrategy;
 class Thumbnail implements ImageInterface
 {
     use DimensionsTrait;
+    use FocalPointTrait;
     use QualityTrait;
 
     /**

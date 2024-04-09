@@ -11,10 +11,13 @@ namespace Neos\Media\Domain\Model\ThumbnailGenerator;
  * source code.
  */
 
+use Imagine\Gmagick\Image;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Adjustment\QualityImageAdjustment;
 use Neos\Media\Domain\Model\Adjustment\ResizeImageAdjustment;
+use Neos\Media\Domain\Model\Adjustment\SetFocalPointAdjustment;
 use Neos\Media\Domain\Model\ImageInterface;
+use Neos\Media\Domain\Model\ImageVariant;
 use Neos\Media\Domain\Model\Thumbnail;
 use Neos\Media\Domain\Service\ImageService;
 use Neos\Media\Exception;

@@ -47,6 +47,12 @@
                                             <f:form.textarea property="caption" id="caption" rows="3" placeholder="{neos:backend.translate(id: 'field.caption', package: 'Neos.Media.Browser')}"/>
                                             <label for="copyrightnotice">{neos:backend.translate(id: 'field.copyrightnotice', package: 'Neos.Media.Browser')}</label>
                                             <f:form.textarea property="copyrightNotice" id="copyrightnotice" rows="2" placeholder="{neos:backend.translate(id: 'field.copyrightnotice', package: 'Neos.Media.Browser')}"/>
+
+                                            <label for="fpx">FP-X</label>
+                                            <f:form.textfield property="focalPointX" id="fpx" placeholder="x"/>
+                                            <label for="fpy">FP-X</label>
+                                            <f:form.textfield property="focalPointY" id="fpy" placeholder="y"/>
+
                                         </f:else>
                                     </f:if>
                                     <f:if condition="{tags}">
@@ -108,12 +114,12 @@
                                                 <td>{assetProxy.iptcProperties.CopyrightNotice}</td>
                                             </tr>
                                         </f:if>
-                                        <f:if condition="{assetProxy.widthInPixels}">
-                                            <tr>
-                                                <th>{neos:backend.translate(id: 'metadata.dimensions', package: 'Neos.Media.Browser')}</th>
-                                                <td>{assetProxy.widthInPixels} x {assetProxy.heightInPixels}</td>
-                                            </tr>
-                                        </f:if>
+																				<f:if condition="{assetProxy.widthInPixels}">
+																					<tr>
+																						<th>{neos:backend.translate(id: 'metadata.dimensions', package: 'Neos.Media.Browser')}</th>
+																						<td>{assetProxy.widthInPixels} x {assetProxy.heightInPixels}</td>
+																					</tr>
+																				</f:if>
                                         <tr>
                                             <th>{neos:backend.translate(id: 'metadata.type', package: 'Neos.Media.Browser')}</th>
                                             <td><span class="neos-label">{assetProxy.mediaType}</span></td>

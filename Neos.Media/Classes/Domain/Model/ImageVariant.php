@@ -35,6 +35,7 @@ use Neos\Utility\TypeHandling;
 class ImageVariant extends Asset implements AssetVariantInterface, ImageInterface
 {
     use DimensionsTrait;
+    use FocalPointTrait;
 
     /**
      * @var ImageService
