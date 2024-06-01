@@ -96,6 +96,18 @@ class AfxService
         $tagName = $payload['identifier'];
         $attributes = $payload['attributes'];
 
+        // optimize html-tags without dynamic attributes, no meta attributes and no path children to render as string
+        if (str_contains($tagName, ':') === false
+            && empty(array_filter($attributes, function(array $attribute)
+                {
+                return $attribute['type'] !== 'prop'
+                    && $attribute['payload']['type'] !== 'string'
+                    && $attribute['payload']['identifier'][0] !== '@';
+                }))
+        ) {
+            return self::nonDynamicHtmlNodeToFusion($payload, $indentation);
+        }
+
         // Tag
         if (str_contains($tagName, ':')) {
             // Named fusion-object
@@ -171,6 +183,55 @@ class AfxService
         }
 
         $fusion .= $indentation . '}';
+
+        return $fusion;
+    }
+
+    protected static function nonDynamicHtmlNodeToFusion(array $payload, string $indentation = ''): string
+    {
+        $tagName = $payload['identifier'];
+        $attributes = $payload['attributes'];
+
+        // filter children into path and content children
+        $contentChildren = [];
+        if ($payload['children'] && count($payload['children']) > 0) {
+            foreach ($payload['children'] as $child) {
+                if ($child['type'] === 'node') {
+                    $path = null;
+                    foreach ($child['payload']['attributes'] as $attribute) {
+                        if ($attribute['type'] === 'prop' && $attribute['payload']['identifier'] === '@path') {
+                            $pathAttribute = $attribute['payload'];
+                            if ($pathAttribute['type'] !== 'string') {
+                                throw new AfxException(sprintf('@path only supports string payloads %s found', $pathAttribute['type']));
+                            }
+                            $path = $pathAttribute['payload'];
+                        }
+                    }
+
+                    if (isset($path)) {
+                        $pathChildren[$path] = $child;
+                        continue;
+                    }
+                }
+                $contentChildren[] = $child;
+            }
+        }
+
+        // Content Children
+        if ($contentChildren !== []) {
+            $childFusion = '';
+            foreach ($contentChildren as $key => $contentChild) {
+                $part = self::astNodeToFusion($contentChild, $indentation . self::INDENTATION);
+                $childFusion .= $indentation . self::INDENTATION . 'child_' .  $key . ' = ' . $part . PHP_EOL;
+            }
+        }
+
+        $fusion = 'Neos.Fusion:Join {' . PHP_EOL;
+        $fusion .= $indentation . self::INDENTATION . 'openingTag = \'<' . $tagName . ($payload['selfClosing'] ? '/>\'' : '>\'') . PHP_EOL;
+        $fusion .= $childFusion;
+        if (!$payload['selfClosing']) {
+            $fusion .= $indentation . self::INDENTATION . 'closingTag = \'</' .  $tagName . '>\'' . PHP_EOL;
+        }
 
         return $fusion;
     }
