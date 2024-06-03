@@ -125,7 +125,11 @@ class Parser
 
                 $transpiledFusion = $dslObject->transpile($code);
 
-                $fusionFile = ObjectTreeParser::parse(FusionSourceCode::fromString('value = ' . $transpiledFusion));
+                if ($transpiledFusion instanceof FusionFile) {
+                    $fusionFile = $transpiledFusion;
+                } else {
+                    $fusionFile = ObjectTreeParser::parse(FusionSourceCode::fromString('value = ' . $transpiledFusion));
+                }
 
                 $mergedArrayTree = $this->getMergedArrayTreeVisitor(new MergedArrayTree([]))->visitFusionFile($fusionFile);
 

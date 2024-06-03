@@ -12,6 +12,7 @@ namespace Neos\Fusion\Core;
  */
 
 use Neos\Fusion;
+use Neos\Fusion\Core\ObjectTreeParser\Ast\FusionFile;
 
 /**
  * Contract for a Fusion DSL parser
@@ -24,8 +25,8 @@ interface DslInterface
      * Transpile the given dsl-code to fusion-code
      *
      * @param string $code
-     * @return string
+     * @return string|FusionFile
      * @throws Fusion\Exception
      */
-    public function transpile($code);
+    public function transpile($code): string|FusionFile;
 }
