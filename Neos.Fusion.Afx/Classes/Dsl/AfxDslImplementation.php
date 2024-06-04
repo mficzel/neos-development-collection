@@ -13,6 +13,7 @@ namespace Neos\Fusion\Afx\Dsl;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Fusion;
+use Neos\Fusion\Afx\Optimization\AstOptimizer;
 use Neos\Fusion\Core\DslInterface;
 use Neos\Fusion\Afx\Service\AfxService;
 use Neos\Fusion\Afx\Exception\AfxException;
@@ -32,14 +33,14 @@ class AfxDslImplementation implements DslInterface
      * Transpile the given dsl-code to fusion-code
      *
      * @param string $code
-     * @return string
+     * @return FusionFile
      * @throws Fusion\Exception
      */
     public function transpile($code): FusionFile
     {
         try {
             $fusionFile = ObjectTreeParser::parse(FusionSourceCode::fromString(AfxService::convertAfxToFusion($code)));
-            return $fusionFile;
+            return AstOptimizer::optimizeFusionFile($fusionFile);
         } catch (AfxException $afxException) {
             throw new Fusion\Exception(sprintf('Error during AFX-transpilation: %s', $afxException->getMessage()));
         } catch (AfxParserException $afxException) {

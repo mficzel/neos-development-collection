@@ -15,7 +15,7 @@ use Neos\Fusion\Core\DslInterface;
 
 class PassthroughTestDslImplementation implements DslInterface
 {
-    public function transpile($code)
+    public function transpile($code): string
     {
         return $code;
     }
