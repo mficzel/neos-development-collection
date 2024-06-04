@@ -36,22 +36,22 @@ class AstOptimizer
             if ($statement instanceof ObjectStatement
                 && OptimizableJoinSpecification::isSatisfiedBy($statement)
             ) {
-                $childStatementList = self::optimizeJoinStatements($statement->block->statementList);
-                $childStatements = $childStatementList->statements;
+                // optimize joins below the current one
+                $childStatementListOptimized = self::optimizeJoinStatements($statement->block->statementList);
                 $childStatementsOptimized = [];
-
-                foreach ($childStatements as $childStatement) {
+                foreach ($childStatementListOptimized->statements as $childStatement) {
                     if ($childStatement instanceof ObjectStatement
                         && OptimizableJoinSpecification::isSatisfiedBy($childStatement)
                     ) {
+                        if ($childStatement->path->segments[0] instanceof MetaPathSegment) {
+                            // ignore meta that can only be a sortProperties = false
+                            continue;
+                        }
+
                         foreach ($childStatement->block->statementList->statements as $grandChildStatement) {
                             if ($grandChildStatement instanceof ObjectStatement) {
-                                if ($grandChildStatement->path->segments === [new MetaPathSegment('sortProperties')]
-                                    && $grandChildStatement->operation->pathValue instanceof BoolValue
-                                    && $grandChildStatement->operation->pathValue->value === false
-                                ) {
-                                    \Neos\Flow\var_dump("skip meta sort");
-                                    \Neos\Flow\var_dump($grandChildStatement);
+                                if ($grandChildStatement->path->segments[0] instanceof MetaPathSegment) {
+                                    // ignore meta that can only be a sortProperties = false
                                     continue;
                                 }
                                 $combinedPathSegment = new PathSegment( $childStatement->path->segments[0]->identifier . '_' . $grandChildStatement->path->segments[0]->identifier);
@@ -71,7 +71,7 @@ class AstOptimizer
                 }
 
                 if (count($childStatementsOptimized) === 0) {
-                    // ignore
+                    continue;
                 } elseif (count($childStatementsOptimized) === 1) {
                     $childStatement = $childStatementsOptimized[0];
                     $optimizedStatements[] = new ObjectStatement(
@@ -81,11 +81,21 @@ class AstOptimizer
                         cursor: $childStatement->cursor
                     );
                 } else {
+                    $sortPropertiesStatements = new ObjectStatement(
+                        new ObjectPath(new MetaPathSegment('sortProperties')),
+                        new ValueAssignment(
+                            new BoolValue(
+                                false
+                            )
+                        ),
+                        null,
+                        0
+                    );
                     $optimizedStatements[] = new ObjectStatement(
                         path: $statement->path,
                         operation: $statement->operation,
                         block: new Block(
-                            new StatementList(...$childStatementsOptimized)
+                            new StatementList($sortPropertiesStatements, ...$childStatementsOptimized)
                         ),
                         cursor: $statement->cursor
                     );

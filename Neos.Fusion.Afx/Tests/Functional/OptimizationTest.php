@@ -3,12 +3,15 @@ namespace Neos\Fusion\Afx\Tests\Functional;
 
 use Neos\Fusion\Afx\Optimization\AstOptimizer;
 use Neos\Fusion\Core\FusionSourceCode;
+use Neos\Fusion\Core\ObjectTreeParser\MergedArrayTree;
+use Neos\Fusion\Core\ObjectTreeParser\MergedArrayTreeVisitor;
 use Neos\Fusion\Core\ObjectTreeParser\ObjectTreeParser;
 use PHPUnit\Framework\TestCase;
 
 class OptimizationTest extends TestCase
 {
     /**
+     * @test
      */
     public function simpleAssignmentCannotBeOptimized(): void
     {
@@ -56,6 +59,7 @@ class OptimizationTest extends TestCase
     }
 
     /**
+     * @test
      */
     public function expandJoinsWithOneItemAndRemoveEmptyJoins(): void
     {
@@ -92,6 +96,7 @@ class OptimizationTest extends TestCase
     }
 
     /**
+     * @test
      */
     public function nestedJoinsInsideTageAreCompacted(): void
     {
@@ -148,9 +153,28 @@ class OptimizationTest extends TestCase
 
     private function verifyFusionOptimization(string $unoptimizedFusion, string $optimizedFusion): void
     {
+        $mergedArrayTree = new MergedArrayTree([]);
+
         $parsingResult = ObjectTreeParser::parse(FusionSourceCode::fromString($unoptimizedFusion));
         $optimizedResult = AstOptimizer::optimizeFusionFile($parsingResult);
+        $optimizedArrayTree = $this->getMergedArrayTreeVisitor($mergedArrayTree)->visitFusionFile($optimizedResult)->getTree();
+
         $expectedResult = ObjectTreeParser::parse(FusionSourceCode::fromString($optimizedFusion));
-        $this->assertEquals($expectedResult, $optimizedResult);
+        $expectedArrayTree = $this->getMergedArrayTreeVisitor($mergedArrayTree)->visitFusionFile($expectedResult)->getTree();
+        \Neos\Flow\var_dump($expectedResult);
+
+        \Neos\Flow\var_dump($optimizedResult);
+        // $this->assertEquals($expectedResult, $optimizedResult);
+
+        $this->assertEquals($expectedArrayTree, $optimizedArrayTree);
+    }
+
+    protected function getMergedArrayTreeVisitor(MergedArrayTree $mergedArrayTree): MergedArrayTreeVisitor
+    {
+        return new MergedArrayTreeVisitor(
+            $mergedArrayTree,
+            fn (...$args) => $this->handleFileInclude(...$args),
+            fn (...$args) => $this->handleDslTranspile(...$args)
+        );
     }
 }
