@@ -14,13 +14,22 @@ namespace Neos\Neos\Controller\Backend;
  * source code.
  */
 
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Exception;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
 use Neos\Neos\Domain\Model\Site;
+use Neos\Neos\Domain\Model\User;
 use Neos\Neos\Domain\Repository\SiteRepository;
+use Neos\Neos\Domain\Service\NodeTypeNameFactory;
+use Neos\Neos\Service\UserService;
+use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Neos\Security\Authorization\Privilege\ModulePrivilege;
 use Neos\Neos\Security\Authorization\Privilege\ModulePrivilegeSubject;
 use Neos\Neos\Service\IconNameMappingService;
@@ -50,6 +59,24 @@ class MenuHelper
      * @Flow\Inject
      */
     protected $privilegeManager;
+
+    /**
+     * @var ContentRepositoryRegistry
+     * @Flow\Inject
+     */
+    protected $contentRepositoryRegistry;
+
+    /**
+     * @var UserService
+     * @Flow\Inject
+     */
+    protected $userService;
+
+    /**
+     * @var WorkspaceService
+     * @Flow\Inject
+     */
+    protected $workspaceService;
 
     /**
      * @var array
@@ -85,10 +112,37 @@ class MenuHelper
         if ($contentModule === null) {
             return [];
         }
+        $user = $this->userService->getBackendUser();
+        if ($user === null) {
+            return [];
+        }
 
         $domainsFound = false;
         $sites = [];
+
         foreach ($this->siteRepository->findOnline() as $site) {
+            /**
+             * @var $site Site
+             */
+            $contentRepository = $this->contentRepositoryRegistry->get($site->getConfiguration()->contentRepositoryId);
+
+            $workspace = $this->workspaceService->getPersonalWorkspaceForUser($site->getConfiguration()->contentRepositoryId, $user->getId());
+            $rootDimensionSpacePoints = $contentRepository->getVariationGraph()->getRootGeneralizations();
+            $arbitraryRootDimensionSpacePoint = array_shift($rootDimensionSpacePoints);
+
+            $userGraph = $contentRepository->getContentGraph($workspace->workspaceName);
+            $userSubgraph = $userGraph->getSubgraph(
+                $arbitraryRootDimensionSpacePoint,
+                VisibilityConstraints::withoutRestrictions()
+            );
+            $userSitesNode = $userSubgraph->findRootNodeByType(NodeTypeNameFactory::forSites());
+            $userSiteNode = $userSitesNode ? $userSubgraph->findNodeByPath(
+                $site->getNodeName()->toNodeName(),
+                $userSitesNode->aggregateId
+            ) : null;
+
+            $nodeAlreadyExistsInUserWorkspace = ($userSiteNode instanceof Node);
+
             // TODO: we need to check permissions here see https://github.com/neos/neos-development-collection/pull/4269
             /*
             foreach ($siteNodesInAllDimensions as $siteNode) {
@@ -110,8 +164,10 @@ class MenuHelper
 
                 if ($active) {
                     $uri = $contentModule['uri'];
-                } else {
+                } elseif ($nodeAlreadyExistsInUserWorkspace) {
                     $uri = $controllerContext->getUriBuilder()->reset()->uriFor('switchSite', ['site' => $site], 'Backend\Backend', 'Neos.Neos');
+                } else {
+                    $uri = null;
                 }
 
                 $domainsFound = true;
