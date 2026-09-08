@@ -409,14 +409,14 @@ final class DocumentUriPathProjection implements ProjectionInterface
                 ));
                 $isSourceNodeExplicitlyDisabled = $parentSourceNode ? $this->isNodeExplicitlyDisabled($sourceNode, $parentSourceNode) : false;
                 $isSourceNodeExplicitlyRemoved = $parentSourceNode ? $this->isNodeExplicitlyRemoved($sourceNode, $parentSourceNode) : false;
-                // transfer disabled and removedstate from parent
+                // transfer disabled- and removed-level from parent and combine with source
                 $targetNode = $targetNode
-                    ->withDisabledLevel($parentNode->getDisableLevel() + ($isSourceNodeExplicitlyDisabled ? 1 : 0))
-                    ->withRemovedLevel($parentNode->getRemovedLevel() + ($isSourceNodeExplicitlyRemoved ? 1 : 0));
+                    ->withDisabledLevel(($parentNode?->getDisableLevel() ?: 0) + ($isSourceNodeExplicitlyDisabled ? 1 : 0))
+                    ->withRemovedLevel(($parentNode?->getRemovedLevel() ?: 0) + ($isSourceNodeExplicitlyRemoved ? 1 : 0));
             } else {
                 $targetNode = $targetNode
-                    ->withDisabledLevel($parentNode->getDisableLevel())
-                    ->withRemovedLevel($parentNode->getRemovedLevel());
+                    ->withDisabledLevel($parentNode?->getDisableLevel() ?: 0)
+                    ->withRemovedLevel($parentNode?->getRemovedLevel() ?: 0);
             }
 
             if ($parentNode !== null) {
